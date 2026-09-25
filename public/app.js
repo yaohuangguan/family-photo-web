@@ -74,17 +74,29 @@ async function loadWeather(date){
   }catch{if(req!==weatherRequest)return;qsa(".weather-card").forEach(card=>{card.classList.remove("loading");qs(".weather-desc",card).textContent="天气暂时获取失败";});}
 }
 loadWeather(cal.selected);const avatars=["🏡","👴","👵","👨","👩","🧑","👧","👦","🐶","🐱","🌻","❤️"];
-const profileKey="family-home-profile-v1",visitorDayKey=()=>dateKey(new Date());
-let profile=JSON.parse(localStorage.getItem(profileKey)||"null")||{id:crypto.randomUUID?.()||Math.random().toString(36).slice(2),name:"家人",avatar:"🏡"};
+const profileKey="family-home-profile-v1",deviceKey="family-home-device-id-v1",visitorDayKey=()=>dateKey(new Date());
+const savedProfile=JSON.parse(localStorage.getItem(profileKey)||"null");
+let deviceId=localStorage.getItem(deviceKey);
+if(!deviceId){
+  deviceId=savedProfile?.id||crypto.randomUUID?.()||Math.random().toString(36).slice(2);
+  localStorage.setItem(deviceKey,deviceId);
+}
+let profile={id:deviceId,name:savedProfile?.name||"家人",avatar:savedProfile?.avatar||"🏡"};
+localStorage.setItem(profileKey,JSON.stringify(profile));
 function renderProfile(){qs("#profile-name").value=profile.name;qs("#profile-avatar").textContent=profile.avatar;qs("#avatar-picker").innerHTML=avatars.map(a=>`<button class="avatar-choice ${a===profile.avatar?"active":""}" data-avatar="${a}">${a}</button>`).join("");}
 qs("#avatar-picker").onclick=e=>{const b=e.target.closest("[data-avatar]");if(!b)return;profile.avatar=b.dataset.avatar;renderProfile();};
-qs("#save-profile").onclick=async()=>{profile.name=(qs("#profile-name").value.trim()||"家人").slice(0,18);localStorage.setItem(profileKey,JSON.stringify(profile));renderProfile();await recordVisit();};
+qs("#save-profile").onclick=async()=>{profile.name=(qs("#profile-name").value.trim()||"家人").slice(0,18);localStorage.setItem(profileKey,JSON.stringify(profile));renderProfile();await recordVisit(true);};
 renderProfile();
 const fmtTime=iso=>new Intl.DateTimeFormat("zh-CN",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(iso));
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function renderFamilyState(data){const visitors=data.visitors||[];qs("#visitor-count").textContent=`${visitors.length} 人`;qs("#visitor-list").innerHTML=visitors.length?visitors.map(v=>`<span class="visitor-chip"><span class="avatar">${v.avatar}</span>${escapeHtml(v.name)}</span>`).join(""):'<span class="message-empty">今天还没人留下脚印</span>';const messages=data.messages||[];qs("#message-list").innerHTML=messages.length?messages.slice().reverse().map(m=>`<article class="message-item"><span class="avatar">${m.avatar}</span><div><div class="message-head"><strong>${escapeHtml(m.name)}</strong><time>${fmtTime(m.createdAt)}</time></div><p class="message-text">${escapeHtml(m.text)}</p></div></article>`).join(""):'<div class="message-empty">还没有留言<br>写下第一句话吧 ♥</div>';}
 async function loadFamilyState(){const r=await fetch(`/api/family?day=${visitorDayKey()}`,{cache:"no-store"});if(r.ok)renderFamilyState(await r.json());}
-async function recordVisit(){await fetch("/api/family/visit",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({day:visitorDayKey(),profile})});}
+async function recordVisit(force=false){
+  const day=visitorDayKey(),stampKey="family-home-visited-"+day;
+  if(!force&&localStorage.getItem(stampKey)===profile.id)return;
+  const r=await fetch("/api/family/visit",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({day,profile})});
+  if(r.ok)localStorage.setItem(stampKey,profile.id);
+}
 qs("#message-input").addEventListener("input",e=>qs("#message-count").textContent=`${e.target.value.length} / 240`);
 qs("#message-form").onsubmit=async e=>{e.preventDefault();const input=qs("#message-input"),text=input.value.trim();if(!text)return;const r=await fetch("/api/family/message",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({profile,text})});if(r.ok){input.value="";qs("#message-count").textContent="0 / 240";await loadFamilyState();}};
 loadFamilyState();recordVisit();const canvas=qs("#family-board"),ctx=canvas.getContext("2d"),empty=qs("#board-empty"),statusEl=qs("#sync-status");
