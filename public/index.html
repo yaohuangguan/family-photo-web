@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f6ead9" />
+  <meta name="description" content="一家人的共享小天地：全家福、日历、两地天气和实时涂鸦板。" />
+  <title>我们的家 · Family Home</title>
+  <link rel="stylesheet" href="/style.css?v=3" />
+</head>
+<body>
+  <div class="paper-noise" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="#home">
+      <span class="brand-mark">家</span>
+      <span><strong>我们的家</strong><small>Family Home</small></span>
+    </a>
+    <nav>
+      <a href="#home">全家福</a><a href="#today">今天</a><a href="#board">涂鸦板</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="home" class="hero section">
+      <div class="hero-copy">
+        <p class="eyebrow">OUR FAMILY · 我们一家人</p>
+        <h1>家，是我们永远的合影。</h1>
+        <p class="lead">石家庄与奥克兰相隔很远，但一家人的牵挂，从来没有时差。</p>
+      </div>      <div class="portrait-stage">
+        <span class="tape tape-left"></span><span class="tape tape-right"></span>
+        <div class="frame">
+          <div class="mat"><img src="/assets/family-photo.jpg" alt="我们一家人的全家福" /></div>
+        </div>
+        <p class="photo-caption">愿我们常相见，常惦念，平安健康，笑容常在。</p>
+      </div>
+    </section>
+
+    <section id="today" class="section dashboard">
+      <div class="section-heading">
+        <p class="eyebrow">TODAY · 今天</p>
+        <h2>同一天，不同的天空</h2>
+        <p>看看家里两座城市此刻的时间和天气。</p>
+      </div>
+      <div class="today-grid">
+        <article class="calendar-card card">
+          <div class="calendar-head">
+            <button id="prev-month" aria-label="上个月">‹</button>
+            <div><strong id="calendar-title"></strong><small id="today-label"></small></div>
+            <button id="next-month" aria-label="下个月">›</button>
+          </div>
+          <div class="weekdays"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+          <div id="calendar-grid" class="calendar-grid"></div>
+          <button id="back-today" class="text-button">回到今天</button>
+        </article>
+
+        <div class="weather-stack">
+          <article class="weather-card card" data-city="shijiazhuang">
+            <div class="weather-top"><div><p class="city-cn">石家庄</p><p class="city-en">Shijiazhuang</p></div><span class="weather-icon">·</span></div>
+            <div class="temp"><span class="temperature">--</span><sup>°C</sup></div>
+            <p class="weather-desc">正在获取天气…</p>
+            <div class="weather-meta"><span class="local-time">--:--</span><span class="feels">体感 --°</span><span class="wind">风速 --</span></div>
+          </article>          <article class="weather-card card" data-city="auckland">
+            <div class="weather-top"><div><p class="city-cn">奥克兰</p><p class="city-en">Auckland</p></div><span class="weather-icon">·</span></div>
+            <div class="temp"><span class="temperature">--</span><sup>°C</sup></div>
+            <p class="weather-desc">正在获取天气…</p>
+            <div class="weather-meta"><span class="local-time">--:--</span><span class="feels">体感 --°</span><span class="wind">风速 --</span></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="board" class="section board-section">
+      <div class="section-heading board-heading">
+        <div><p class="eyebrow">FAMILY BOARD · 家庭涂鸦板</p><h2>留一点话，也留一点画</h2><p>打开这个网站的家人都能一起画，内容会实时同步并永久保存。</p></div>
+        <div id="sync-status" class="sync-status"><span></span>正在连接</div>
+      </div>
+      <div class="board-shell card">
+        <div class="board-toolbar">
+          <label>颜色 <input id="pen-color" type="color" value="#7f4f3a" /></label>
+          <label>粗细 <input id="pen-size" type="range" min="2" max="24" value="5" /></label>
+          <button id="eraser-btn" class="tool-button">橡皮</button>
+          <button id="clear-btn" class="tool-button danger">清空画板</button>
+        </div>
+        <div class="canvas-wrap"><canvas id="family-board"></canvas><div id="board-empty" class="board-empty">画点什么吧 ♥</div></div>
+        <p class="board-tip">手机和电脑都可以直接画。你的每一笔都会同步给正在看的家人。</p>
+      </div>
+    </section>
+  </main>
+
+  <footer><span>把普通的日子，过成值得珍藏的回忆。</span><span>♥</span><span>我们一家人</span></footer>
+  <script src="/app.js?v=3"></script>
+</body>
+</html>

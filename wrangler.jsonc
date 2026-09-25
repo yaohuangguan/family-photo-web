@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "family-photo-web",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-25",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "durable_objects": {
+    "bindings": [
+      { "name": "FAMILY_BOARD", "class_name": "FamilyBoard" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["FamilyBoard"] }
+  ],
+  "observability": { "enabled": true }
+}
