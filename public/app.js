@@ -128,3 +128,84 @@ qs("#eraser-btn").onclick=()=>{eraser=!eraser;qs("#eraser-btn").classList.toggle
 qs("#clear-btn").onclick=()=>{const b=boards.find(x=>x.id===currentBoard);if(confirm(`确定要清空“${b?.name||"当前画板"}”吗？这个操作会同步给所有人。`))send({type:"clear"});};
 new ResizeObserver(resizeCanvas).observe(canvas);
 (async()=>{await loadBoards();connectBoard();})();
+/* PWA install guidance */
+let deferredInstallPrompt=null;
+const installBtn=qs("#install-app-btn");
+const installSheet=qs("#install-sheet");
+const installContent=qs("#install-sheet-content");
+const installPrimary=qs("#install-sheet-primary");
+const installClose=qs("#install-sheet-close");
+const installLater=qs("#install-sheet-later");
+const installBackdrop=qs("#install-sheet-backdrop");
+const isStandalone=()=>window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;
+const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent);
+const isSafari=()=>isIOS()&&/safari/i.test(navigator.userAgent)&&!/crios|fxios|edgios/i.test(navigator.userAgent);
+const installDismissKey="family-pwa-install-dismissed-v1";
+
+function closeInstallSheet(){
+  installSheet.hidden=true;
+}
+function openInstallSheet(){
+  if(isStandalone())return;
+  installSheet.hidden=false;
+  if(isIOS()){
+    installPrimary.hidden=true;
+    installContent.innerHTML=`
+      <div class="ios-install-steps">
+        <p><strong>iPhone / iPad 安装方法</strong></p>
+        <ol>
+          <li>请使用 <strong>Safari</strong> 打开这个网页。</li>
+          <li>点击底部工具栏的 <span class="share-glyph">⇧</span> <strong>分享</strong> 按钮。</li>
+          <li>向下滑，选择 <strong>“添加到主屏幕”</strong>。</li>
+          <li>点击右上角 <strong>“添加”</strong>，以后就能像 App 一样打开。</li>
+        </ol>
+        ${isSafari()?"":"<p class='install-note'>你现在可能不是在 Safari 里。iOS 需要用 Safari 才能添加到主屏幕。</p>"}
+      </div>`;
+  }else{
+    installPrimary.hidden=!deferredInstallPrompt;
+    installContent.innerHTML=`
+      <p class="install-copy">安装后可以从主屏幕直接打开，获得更接近原生 App 的全屏体验。</p>
+      <p class="install-note">家庭留言、天气和画板仍会保持在线同步。</p>`;
+  }
+}
+function maybeShowInstallGuide(){
+  if(isStandalone())return;
+  const dismissed=Number(localStorage.getItem(installDismissKey)||0);
+  const sevenDays=7*24*60*60*1000;
+  if(Date.now()-dismissed<sevenDays)return;
+  setTimeout(openInstallSheet,1800);
+}
+window.addEventListener("beforeinstallprompt",e=>{
+  e.preventDefault();
+  deferredInstallPrompt=e;
+  installBtn.hidden=false;
+});
+window.addEventListener("appinstalled",()=>{
+  deferredInstallPrompt=null;
+  installBtn.hidden=true;
+  closeInstallSheet();
+  localStorage.removeItem(installDismissKey);
+});
+installBtn.onclick=openInstallSheet;
+installClose.onclick=closeInstallSheet;
+installBackdrop.onclick=closeInstallSheet;
+installLater.onclick=()=>{
+  localStorage.setItem(installDismissKey,String(Date.now()));
+  closeInstallSheet();
+};
+installPrimary.onclick=async()=>{
+  if(!deferredInstallPrompt)return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt=null;
+  installBtn.hidden=true;
+  closeInstallSheet();
+};
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
+}
+if(!isStandalone()){
+  if(isIOS())installBtn.hidden=false;
+  maybeShowInstallGuide();
+}
