@@ -161,3 +161,40 @@ button,a,input,textarea,select{-webkit-tap-highlight-color:transparent}
   .install-sheet-card{width:calc(100% - 12px);margin:6px;border-radius:24px 24px 18px 18px;padding:20px 18px calc(18px + env(safe-area-inset-bottom))}
   .install-sheet-card h2{font-size:21px}.install-sheet-actions{position:sticky;bottom:0}
 }
+
+/* v10 mobile message controls: never clip */
+@media(max-width:560px){
+  #messages.section{width:calc(100% - 16px);overflow:visible}
+  .family-grid{display:block;width:100%;max-width:100%;min-width:0}
+  .profile-card,.message-card{width:100%;max-width:100%;min-width:0;overflow:visible}
+  .message-card{margin-top:12px;padding:14px}
+  .profile-row{display:grid;grid-template-columns:58px minmax(0,1fr);gap:12px;width:100%}
+  .profile-row>div:last-child{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;width:100%;min-width:0}
+  .profile-row input,#save-profile{width:100%;max-width:100%;min-width:0}
+  #save-profile{min-height:44px}
+  .message-list{width:100%;max-width:100%;min-width:0;overflow-x:hidden}
+  .message-form{width:100%;max-width:100%;min-width:0;overflow:visible}
+  .message-form textarea{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+  .message-form>div{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    align-items:stretch;
+  }
+  .message-form #message-count{display:block;width:100%;text-align:right}
+  .message-form .primary-button{
+    display:block;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    min-height:46px;
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
+    line-height:1.25;
+    padding:11px 14px;
+  }
+}
