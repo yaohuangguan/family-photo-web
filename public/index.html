@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#f6ead9" />
   <meta name="description" content="一家人的共享小天地：全家福、日历、两地天气、留言墙和实时涂鸦板。" />
   <title>我们的家 · Family Home</title>
-  <link rel="stylesheet" href="/style.css?v=5" />
+  <link rel="stylesheet" href="/style.css?v=6" />
 </head>
 <body>
   <div class="paper-noise" aria-hidden="true"></div>
@@ -17,10 +17,21 @@
 
   <main>
     <section id="home" class="hero section">
-      <div class="hero-copy"><p class="eyebrow">OUR FAMILY · 我们一家人</p><h1>家，是我们永远的合影。</h1><p class="lead">石家庄与奥克兰相隔很远，但一家人的牵挂，从来没有时差。</p></div>
+      <div class="hero-copy">
+        <p class="eyebrow">OUR FAMILY · 我们一家人</p>
+        <h1>家，是我们永远的合影。</h1>
+        <p class="lead">石家庄与奥克兰相隔很远，但一家人的牵挂，从来没有时差。</p>
+      </div>
       <div class="portrait-stage">
         <span class="tape tape-left"></span><span class="tape tape-right"></span>
-        <div class="frame"><div class="mat"><img src="/assets/family-photo.jpg" alt="我们一家人的全家福" /></div></div>
+        <div class="frame"><div class="mat photo-lock-wrap">
+          <img id="family-photo" src="/assets/family-photo-blur.jpg" alt="我们一家人的全家福" />
+          <div id="photo-lock" class="photo-lock">
+            <div class="lock-icon">🔒</div><strong>这张全家福已保护</strong><p>输入家庭密码后查看原图</p>
+            <form id="photo-unlock-form"><input id="photo-code" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="输入密码" /><button type="submit">查看原图</button></form>
+            <small id="photo-lock-error"></small>
+          </div>
+        </div></div>
         <p class="photo-caption">愿我们常相见，常惦念，平安健康，笑容常在。</p>
       </div>
     </section>
@@ -34,9 +45,7 @@
           <div id="calendar-grid" class="calendar-grid"></div>
           <div id="selected-day-detail" class="selected-day-detail"></div>
           <button id="back-today" class="text-button">回到今天</button>
-        </article>
-
-        <div class="weather-stack">
+        </article>        <div class="weather-stack">
           <div class="weather-date-strip"><span id="weather-date-title">今天</span><small id="weather-date-note"></small></div>
           <article class="weather-card card" data-city="shijiazhuang">
             <div class="weather-top"><div><p class="city-cn">石家庄</p><p class="city-en">Shijiazhuang</p></div><span class="weather-icon">·</span></div>
@@ -67,18 +76,28 @@
           <form id="message-form" class="message-form"><textarea id="message-input" maxlength="240" placeholder="给家里留句话……" required></textarea><div><span id="message-count">0 / 240</span><button class="primary-button" type="submit">留下这句话</button></div></form>
         </article>
       </div>
-    </section>
-
-    <section id="board" class="section board-section">
-      <div class="section-heading board-heading"><div><p class="eyebrow">FAMILY BOARD · 家庭涂鸦板</p><h2>留一点话，也留一点画</h2><p>打开网站的家人都能一起画，内容实时同步并持久保存。</p></div><div id="sync-status" class="sync-status"><span></span>正在连接</div></div>
+    </section>    <section id="board" class="section board-section">
+      <div class="section-heading board-heading">
+        <div><p class="eyebrow">FAMILY BOARD · 家庭涂鸦板</p><h2>留一点话，也留一点画</h2><p>可以新建多个画板，旧画板会一直保留，随时切换继续画。</p></div>
+        <div id="sync-status" class="sync-status"><span></span>正在连接</div>
+      </div>
       <div class="board-shell card">
-        <div class="board-toolbar"><label>颜色 <input id="pen-color" type="color" value="#7f4f3a" /></label><label>粗细 <input id="pen-size" type="range" min="2" max="24" value="5" /></label><button id="eraser-btn" class="tool-button">橡皮</button><button id="clear-btn" class="tool-button danger">清空画板</button></div>
+        <div class="board-switcher">
+          <label>当前画板 <select id="board-select"></select></label>
+          <button id="new-board-btn" class="primary-button" type="button">＋ 新建画板</button>
+        </div>
+        <div class="board-toolbar">
+          <label>颜色 <input id="pen-color" type="color" value="#7f4f3a" /></label>
+          <label>粗细 <input id="pen-size" type="range" min="2" max="24" value="5" /></label>
+          <button id="eraser-btn" class="tool-button">橡皮</button>
+          <button id="clear-btn" class="tool-button danger">清空当前画板</button>
+        </div>
         <div class="canvas-wrap"><canvas id="family-board"></canvas><div id="board-empty" class="board-empty">画点什么吧 ♥</div></div>
-        <p class="board-tip">手机和电脑都可以直接画。每一笔都会同步给正在看的家人。</p>
+        <p class="board-tip">每个画板独立持久化。新建不会覆盖旧画板，所有家人看到的是同一套画板。</p>
       </div>
     </section>
   </main>
   <footer><span>把普通的日子，过成值得珍藏的回忆。</span><span>♥</span><span>我们一家人</span></footer>
-  <script src="/app.js?v=5"></script>
+  <script src="/app.js?v=6"></script>
 </body>
 </html>
