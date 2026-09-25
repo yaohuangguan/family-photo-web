@@ -119,3 +119,27 @@ button,a,input,textarea,select{-webkit-tap-highlight-color:transparent}
   .board-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px}.board-toolbar label{min-height:44px;justify-content:center;border:1px solid var(--line);border-radius:12px;background:#fffaf3;padding:7px}.board-toolbar input[type=range]{width:min(36vw,150px)}.board-toolbar .tool-button{width:100%}.board-toolbar .danger{grid-column:1/-1;margin-left:0}
   .canvas-wrap{height:62svh;min-height:430px}.board-empty{font-size:22px}.board-tip{padding:10px 12px;line-height:1.5}
 }
+
+/* v8 mobile message wall overflow fix */
+.family-grid,.message-card,.message-list,.message-form,.message-item,.message-item>div{min-width:0;max-width:100%}
+.message-card{overflow:hidden}
+.message-list{width:100%;overflow-x:hidden;overflow-y:auto}
+.message-item{width:100%;grid-template-columns:38px minmax(0,1fr)}
+.message-item>div{overflow:hidden}
+.message-head{min-width:0;align-items:flex-start}
+.message-head strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.message-head time{flex:0 0 auto;white-space:nowrap}
+.message-text{max-width:100%;overflow-wrap:anywhere;word-break:break-word}
+.message-form,.message-form textarea{width:100%;max-width:100%}
+@media(max-width:560px){
+  #messages.section{width:calc(100% - 18px);overflow:hidden}
+  .family-grid{width:100%;min-width:0}
+  .message-card{width:100%;padding:14px}
+  .message-list{padding-right:0}
+  .message-item{grid-template-columns:34px minmax(0,1fr);gap:9px;padding:11px}
+  .message-item .avatar{width:34px;height:34px;font-size:18px}
+  .message-head{gap:8px}
+  .message-head time{font-size:10px}
+  .message-form>div{gap:10px}
+  .message-form .primary-button{flex:0 0 auto;white-space:nowrap}
+}
