@@ -198,3 +198,8 @@ button,a,input,textarea,select{-webkit-tap-highlight-color:transparent}
     padding:11px 14px;
   }
 }
+
+/* Visible outage state: never mistake a storage failure for empty family data. */
+.family-sync-warning{margin:0 0 20px;padding:14px 18px;border:1px solid #e0c09b;border-radius:12px;background:#fff8ed;color:#724c27;font-size:15px;line-height:1.6}
+.family-sync-warning[hidden]{display:none!important}
+.message-form button:disabled,.board-switcher button:disabled{opacity:.55;cursor:not-allowed}

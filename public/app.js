@@ -90,7 +90,34 @@ renderProfile();
 const fmtTime=iso=>new Intl.DateTimeFormat("zh-CN",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(iso));
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function renderFamilyState(data){const visitors=data.visitors||[];qs("#visitor-count").textContent=`${visitors.length} 人`;qs("#visitor-list").innerHTML=visitors.length?visitors.map(v=>`<span class="visitor-chip"><span class="avatar">${v.avatar}</span>${escapeHtml(v.name)}</span>`).join(""):'<span class="message-empty">今天还没人留下脚印</span>';const messages=data.messages||[];qs("#message-list").innerHTML=messages.length?messages.slice().reverse().map(m=>`<article class="message-item"><span class="avatar">${m.avatar}</span><div><div class="message-head"><strong>${escapeHtml(m.name)}</strong><time>${fmtTime(m.createdAt)}</time></div><p class="message-text">${escapeHtml(m.text)}</p></div></article>`).join(""):'<div class="message-empty">还没有留言<br>写下第一句话吧 ♥</div>';}
-async function loadFamilyState(){const r=await fetch(`/api/family?day=${visitorDayKey()}`,{cache:"no-store"});if(r.ok)renderFamilyState(await r.json());}
+let familyStateAvailable=false;
+async function loadFamilyState(){
+  try{
+    const r=await fetch(`/api/family?day=${visitorDayKey()}`,{cache:"no-store"});
+    if(!r.ok)throw new Error(`family API HTTP ${r.status}`);
+    const data=await r.json();
+    renderFamilyState(data);
+    try{localStorage.setItem("family-home-last-known-v1",JSON.stringify(data));}catch{}
+    qs("#message-list").dataset.loaded="1";
+    familyStateAvailable=true;
+    qs("#family-sync-warning").hidden=true;
+    qs('#message-form button[type="submit"]').disabled=false;
+    recordVisit().catch(()=>{});
+  }catch(err){
+    console.warn("Family state unavailable:",err);
+    familyStateAvailable=false;
+    qs("#family-sync-warning").hidden=false;
+    qs('#message-form button[type="submit"]').disabled=true;
+    if(!qs("#message-list").dataset.loaded){
+      try{
+        const cached=localStorage.getItem("family-home-last-known-v1");
+        if(cached){renderFamilyState(JSON.parse(cached));qs("#message-list").dataset.loaded="1";qs("#family-sync-warning").textContent="云端暂时无法连接，当前显示本机最后一次成功加载的留言（可能不是最新），不能发送新留言。";}
+        else qs("#message-list").innerHTML='<div class="message-empty">云端暂时不可用，历史留言并未被清空。正在等待恢复…</div>';
+      }catch{qs("#message-list").innerHTML='<div class="message-empty">云端暂时不可用，正在等待恢复…</div>';}
+    }
+  }
+}
+setInterval(loadFamilyState,30000);
 async function recordVisit(force=false){
   const day=visitorDayKey(),stampKey="family-home-visited-"+day;
   if(!force&&localStorage.getItem(stampKey)===profile.id)return;
@@ -98,9 +125,9 @@ async function recordVisit(force=false){
   if(r.ok)localStorage.setItem(stampKey,profile.id);
 }
 qs("#message-input").addEventListener("input",e=>qs("#message-count").textContent=`${e.target.value.length} / 240`);
-qs("#message-form").onsubmit=async e=>{e.preventDefault();const input=qs("#message-input"),text=input.value.trim();if(!text)return;const r=await fetch("/api/family/message",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({profile,text})});if(r.ok){input.value="";qs("#message-count").textContent="0 / 240";await loadFamilyState();}};
-loadFamilyState();recordVisit();const canvas=qs("#family-board"),ctx=canvas.getContext("2d"),empty=qs("#board-empty"),statusEl=qs("#sync-status");
-let strokes=[],drawing=false,current=null,eraser=false,socket=null,retryTimer=null,boards=[],currentBoard=localStorage.getItem("family-board-current")||"main";
+qs("#message-form").onsubmit=async e=>{e.preventDefault();const input=qs("#message-input"),text=input.value.trim();if(!text)return;const r=await fetch("/api/family/message",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({profile,text})});if(r.ok){input.value="";qs("#message-count").textContent="0 / 240";await loadFamilyState();}else{qs("#family-sync-warning").hidden=false;alert("云端暂时无法保存留言，文字仍在输入框，请稍后重试。");}};
+loadFamilyState();const canvas=qs("#family-board"),ctx=canvas.getContext("2d"),empty=qs("#board-empty"),statusEl=qs("#sync-status");
+let strokes=[],drawing=false,current=null,eraser=false,socket=null,retryTimer=null,retryAttempts=0,boards=[],currentBoard=localStorage.getItem("family-board-current")||"main";
 const clientId=profile.id,ratio=()=>window.devicePixelRatio||1;
 function resizeCanvas(){const rect=canvas.getBoundingClientRect(),dpr=ratio();canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);redraw();}
 function drawStroke(stroke){if(!stroke?.points?.length)return;const r=canvas.getBoundingClientRect();ctx.save();ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle=stroke.erase?"#fffdf8":stroke.color;ctx.globalCompositeOperation=stroke.erase?"destination-out":"source-over";ctx.lineWidth=stroke.size;ctx.beginPath();stroke.points.forEach((p,i)=>{const x=p[0]*r.width,y=p[1]*r.height;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});if(stroke.points.length===1){const [x,y]=stroke.points[0];ctx.lineTo(x*r.width+.01,y*r.height+.01);}ctx.stroke();ctx.restore();}
@@ -109,25 +136,31 @@ function pointFromEvent(e){const r=canvas.getBoundingClientRect();return[(e.clie
 function send(msg){if(socket?.readyState===WebSocket.OPEN)socket.send(JSON.stringify(msg));}
 function setStatus(mode,text){statusEl.className="sync-status "+mode;statusEl.lastChild.textContent=text;}
 async function loadBoards(prefer=currentBoard){
-  const r=await fetch("/api/boards",{cache:"no-store"});if(!r.ok)return;boards=(await r.json()).boards||[];
+  let r;
+  try{r=await fetch("/api/boards",{cache:"no-store"});}catch{}
+  if(!r?.ok){setStatus("offline","云端暂不可用，画板未被清空");qs("#board-select").disabled=true;qs("#new-board-btn").disabled=true;return false;}
+  boards=(await r.json()).boards||[];
+  qs("#board-select").disabled=false;qs("#new-board-btn").disabled=false;
   if(!boards.some(b=>b.id===prefer))prefer=boards[0]?.id||"main";currentBoard=prefer;localStorage.setItem("family-board-current",currentBoard);
   qs("#board-select").innerHTML=boards.map(b=>`<option value="${b.id}">${escapeHtml(b.name)}</option>`).join("");qs("#board-select").value=currentBoard;
+  return true;
 }
 function connectBoard(){
   clearTimeout(retryTimer);if(socket){socket.onclose=null;try{socket.close();}catch{}}
   strokes=[];redraw();const proto=location.protocol==="https:"?"wss":"ws";socket=new WebSocket(`${proto}://${location.host}/api/board?board=${encodeURIComponent(currentBoard)}`);setStatus("","正在连接");
-  socket.onopen=()=>setStatus("online","已实时同步");socket.onclose=()=>{setStatus("offline","连接中断，正在重连");retryTimer=setTimeout(connectBoard,1600);};socket.onerror=()=>socket.close();
+  socket.onopen=()=>{retryAttempts=0;setStatus("online","已实时同步");};socket.onclose=()=>{retryAttempts++;setStatus("offline","云端暂时不可用，稍后自动重连");retryTimer=setTimeout(connectBoard,Math.min(30000,1600*2**Math.min(retryAttempts,5)));};socket.onerror=()=>socket.close();
   socket.onmessage=e=>{let msg;try{msg=JSON.parse(e.data)}catch{return}if(msg.type==="snapshot"){strokes=Array.isArray(msg.strokes)?msg.strokes:[];redraw();}if(msg.type==="stroke"&&msg.stroke){strokes.push(msg.stroke);drawStroke(msg.stroke);empty.classList.add("hidden");}if(msg.type==="segment"&&msg.clientId!==clientId&&msg.stroke)drawStroke(msg.stroke);if(msg.type==="clear"){strokes=[];redraw();}if(msg.type==="family-update")loadFamilyState();if(msg.type==="boards-update")loadBoards(currentBoard);};
 }qs("#board-select").onchange=e=>{currentBoard=e.target.value;localStorage.setItem("family-board-current",currentBoard);connectBoard();};
 qs("#new-board-btn").onclick=async()=>{const name=prompt("给新画板起个名字：",`家庭画板 ${boards.length+1}`);if(name===null)return;const r=await fetch("/api/boards",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:name.trim()})});if(!r.ok){alert("新建画板失败");return;}const {board}=await r.json();await loadBoards(board.id);connectBoard();};
-canvas.addEventListener("pointerdown",e=>{drawing=true;canvas.setPointerCapture(e.pointerId);const p=pointFromEvent(e);current={id:crypto.randomUUID?.()||Date.now().toString(36),color:qs("#pen-color").value,size:Number(qs("#pen-size").value),erase:eraser,points:[p]};drawStroke(current);empty.classList.add("hidden");});
+canvas.addEventListener("pointerdown",e=>{if(socket?.readyState!==WebSocket.OPEN){alert("云端暂时不可用，不能保存新画笔内容，请稍后再试。");return;}drawing=true;canvas.setPointerCapture(e.pointerId);const p=pointFromEvent(e);current={id:crypto.randomUUID?.()||Date.now().toString(36),color:qs("#pen-color").value,size:Number(qs("#pen-size").value),erase:eraser,points:[p]};drawStroke(current);empty.classList.add("hidden");});
 canvas.addEventListener("pointermove",e=>{if(!drawing||!current)return;const p=pointFromEvent(e),prev=current.points[current.points.length-1];current.points.push(p);const seg={...current,points:[prev,p]};drawStroke(seg);send({type:"segment",clientId,stroke:seg});});
 function finishStroke(){if(!drawing||!current)return;drawing=false;const done=current;current=null;strokes.push(done);send({type:"stroke",stroke:done});}
 canvas.addEventListener("pointerup",finishStroke);canvas.addEventListener("pointercancel",finishStroke);
 qs("#eraser-btn").onclick=()=>{eraser=!eraser;qs("#eraser-btn").classList.toggle("active",eraser);qs("#eraser-btn").textContent=eraser?"橡皮已开启":"橡皮";};
 qs("#clear-btn").onclick=()=>{const b=boards.find(x=>x.id===currentBoard);if(confirm(`确定要清空“${b?.name||"当前画板"}”吗？这个操作会同步给所有人。`))send({type:"clear"});};
 new ResizeObserver(resizeCanvas).observe(canvas);
-(async()=>{await loadBoards();connectBoard();})();
+(async()=>{if(await loadBoards())connectBoard();})();
+setInterval(async()=>{if(!boards.length&&await loadBoards())connectBoard();},30000);
 /* PWA install guidance */
 let deferredInstallPrompt=null;
 const installBtn=qs("#install-app-btn");

@@ -1,8 +1,8 @@
-const CACHE="family-home-v9";
+const CACHE="family-home-v11";
 const SHELL=[
   "/",
-  "/style.css?v=9",
-  "/app.js?v=9",
+  "/style.css?v=10",
+  "/app.js?v=11",
   "/manifest.webmanifest?v=9",
   "/assets/family-photo-blur.jpg",
   "/icons/icon-192.png",
